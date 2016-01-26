@@ -1,5 +1,5 @@
 import unittest
-from parser import HSReplayReader
+from hsreplayparser.parser import HSReplayReader
 
 
 class HSReplayReaderTests(unittest.TestCase):

@@ -168,6 +168,8 @@ class GameElement(ReplayBaseElement):
 		self._game = self
 
 		self._initialized = False
+		self._first_main_stage_started = False
+
 		self._start_element_handlers = {
 			"GameEntity": self._start_game_entity,
 			"Player": self._start_player_entity,
@@ -196,6 +198,13 @@ class GameElement(ReplayBaseElement):
 			if int(tag_change.value) == int(Step.BEGIN_MULLIGAN):
 				for player in self._players:
 					player._capture_deck()
+					player._capture_initial_draw()
+
+		if int(tag_change.tag) == int(GameTag.STEP) and int(tag_change.value) == int(Step.MAIN_READY):
+			if not self._first_main_stage_started:
+				for player in self._players:
+					player._capture_post_mulligan_hand()
+				self._first_main_stage_started = True
 
 	def _process_show_entity(self, show_entity):
 		for player in self._players:
@@ -315,10 +324,17 @@ class PlayerElement(ReplayBaseElement):
 		super().__init__(attributes, parent, game)
 		self._controlled_entities = []
 		self._deck = {}
+		self._pre_mulligan_initial_hand = {}
+		self._post_mulligan_initial_hand = {}
+		self._mulligan_discards = set()
 
 	def _process_show_entity(self, show_entity):
 		if show_entity.entity in self._deck:
 			self._deck[show_entity.entity] = show_entity.cardID
+
+			if not self._game._first_main_stage_started:
+				# The <ShowEntity> tags before the first main stage represent the replacement cards during the mulligan phase
+				self._post_mulligan_initial_hand[show_entity.entity] = show_entity.cardID
 
 	def register_controlled_entity(self, entity):
 		self._controlled_entities.append(entity)
@@ -334,6 +350,25 @@ class PlayerElement(ReplayBaseElement):
 				cardID = entity._attributes["cardID"] if "cardID" in entity._attributes else None
 				if cardID != THE_COIN:
 					self._deck[entity.id] = cardID
+
+	def _capture_initial_draw(self):
+		# Invoked right before the mulligan phase begins to capture the initial hand.
+		for entity in self._controlled_entities:
+			if int(entity._tag_value(GameTag.ZONE)) == int(Zone.HAND):
+				cardID = entity._attributes["cardID"] if "cardID" in entity._attributes else None
+				if cardID != THE_COIN:
+					self._pre_mulligan_initial_hand[entity.id] = cardID
+
+	def _capture_post_mulligan_hand(self):
+		# Invoked right after the mulligan phase ends, but before the first main phase begins.
+		for entity in self._controlled_entities:
+			if int(entity._tag_value(GameTag.ZONE)) == int(Zone.HAND):
+				cardID = entity._attributes["cardID"] if "cardID" in entity._attributes else None
+				if cardID != THE_COIN:
+					self._post_mulligan_initial_hand[entity.id] = cardID
+
+		# Set difference used to determine which cards were discarded
+		self._mulligan_discards = set(self._pre_mulligan_initial_hand.keys()) - set(self._post_mulligan_initial_hand.keys())
 
 	@property
 	def player_id(self):
@@ -354,6 +389,21 @@ class PlayerElement(ReplayBaseElement):
 	@property
 	def deck_list(self):
 		return [v for k, v in self._deck.items() if v]
+
+	@property
+	def mulligan_info(self):
+		info = MulliganInfo()
+
+		for k, v in self._pre_mulligan_initial_hand.items():
+			info.initial_draw.append(self._deck[k] if self._deck[k] else "UNREVEALED")
+
+		for k in self._mulligan_discards:
+			info.discarded.append(self._deck[k] if self._deck[k] else "UNREVEALED")
+
+		for k, v in self._post_mulligan_initial_hand.items():
+			info.final_cards.append(self._deck[k] if self._deck[k] else "UNREVEALED")
+
+		return info
 
 
 class ReplayTagElement(ReplayBaseElement):
@@ -614,3 +664,12 @@ class TargetElement(ReplayBaseElement):
 
 class SendOptionElement(ReplayBaseElement):
 	element = "SendOption"
+
+
+class MulliganInfo:
+	"""A simple container for metadata related to each player's mulligan phase."""
+
+	def __init__(self):
+		self.initial_draw = []
+		self.discarded = []
+		self.final_cards = []

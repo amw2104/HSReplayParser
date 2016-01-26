@@ -5,6 +5,7 @@ from hsreplayparser.parser import HSReplayParser
 class HSReplayParserTests(unittest.TestCase):
 
 	def setUp(self):
+
 		with open('./Power_2.log.xml', mode='rb') as f:
 			self.parser = HSReplayParser(f)
 
@@ -25,3 +26,28 @@ class HSReplayParserTests(unittest.TestCase):
 
 		self.assertCountEqual(actual_winning_deck, expected_winning_deck)
 		self.assertCountEqual(actual_loosing_deck, expected_loosing_deck)
+
+	def test_mulligan_info(self):
+		# FIRST PLAYER
+		first_player = self.parser.replay.game.first_player
+		first_player_mulligan_info = first_player.mulligan_info
+
+		expected_first_player_initial_draw = ['UNREVEALED', 'AT_017', 'UNREVEALED']
+		expected_first_player_discarded = ['UNREVEALED', 'UNREVEALED']
+		expected_first_player_final_cards = ['CS2_235', 'UNREVEALED', 'AT_017']
+
+		self.assertCountEqual(expected_first_player_initial_draw, first_player_mulligan_info.initial_draw)
+		self.assertCountEqual(expected_first_player_discarded, first_player_mulligan_info.discarded)
+		self.assertCountEqual(expected_first_player_final_cards, first_player_mulligan_info.final_cards)
+
+		# SECOND PLAYER
+		second_player = self.parser.replay.game.second_player
+		second_player_mulligan_info = second_player.mulligan_info
+
+		expected_second_player_initial_draw = ['EX1_382', 'GVG_096', 'AT_104', 'GVG_061']
+		expected_second_player_discarded = ['EX1_382', 'AT_104']
+		expected_second_player_final_cards = ['GVG_061', 'GVG_096', 'GVG_060', 'NEW1_019']
+
+		self.assertCountEqual(expected_second_player_initial_draw, second_player_mulligan_info.initial_draw)
+		self.assertCountEqual(expected_second_player_discarded, second_player_mulligan_info.discarded)
+		self.assertCountEqual(expected_second_player_final_cards, second_player_mulligan_info.final_cards)

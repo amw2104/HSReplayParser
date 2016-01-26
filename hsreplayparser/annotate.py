@@ -49,6 +49,9 @@ def annotate_replay(infile, outfile, verbose = False):
 			if name == "ZONE":
 				tag_change.set("ZoneName", Zone(int(tag_change.attrib['value'])).name)
 
+			if name == "MULLIGAN_STATE":
+				tag_change.set("MulliganStateName", Mulligan(int(tag_change.attrib['value'])).name)
+
 		except ValueError:
 			print("WARNING: tag %s in TagChange '%s' is not a valid GameTag" % (tag_change.attrib['tag'], _to_string(tag_change)))
 

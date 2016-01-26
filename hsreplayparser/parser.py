@@ -12,18 +12,18 @@ LOG = logging.getLogger(__name__)
 THE_COIN = 'GAME_005'
 
 
-class ReplayReaderError(Exception):
+class ReplayParserError(Exception):
 	pass
 
 
-class HSReplayReader:
-	"""A replay reader for the HSReplay specification.
+class HSReplayParser:
+	"""A replay parser for the HSReplay specification.
 
-	The reader converts the .hsreplay file into a tree data structure composed of the provided sub-classes of the
-	ReplayBaseElement object. The reader stores a pointer to the current element in the tree it is building in the
+	The parser converts the .hsreplay file into a tree data structure composed of the provided sub-classes of the
+	ReplayBaseElement object. The parser stores a pointer to the current element in the tree it is building in the
 	_current variable. Each new element encountered in the replay file triggers an invocation of start_element() on the
-	current element and the end of each element triggers an invocation of end_element(). The reader expects both methods
-	to return an updated reference to the element that is now the current element in the tree data structure. The reader
+	current element and the end of each element triggers an invocation of end_element(). The parser expects both methods
+	to return an updated reference to the element that is now the current element in the tree data structure. The parser
 	uses this reference to update the element to which _current is pointing.
 
 	Args:
@@ -40,7 +40,7 @@ class HSReplayReader:
 		try:
 			self.parser.ParseFile(f)
 		except ExpatError as err:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Parsing Error on line %d character %d: %s" % (err.lineno, err.offset, errors.messages[err.code]))
 
 	def _start_element_handler(self, name, attributes):
@@ -52,7 +52,7 @@ class HSReplayReader:
 				self._current = replay_element
 				self._hsreplay = replay_element
 			else:
-				raise ReplayReaderError("HSReplay files must begin with an HSReplay element.")
+				raise ReplayParserError("HSReplay files must begin with an HSReplay element.")
 		else:
 			self._current = self._current.start_element(name, attributes)
 
@@ -70,7 +70,7 @@ class ReplayBaseElement:
 
 	Override start_element() and end_element() in sub-classes to provide element specific logic for handling replay
 	elements. The sub-class implementations of start_element() are responsible for instantiating the correct sub-class
-	representation of each child tag encountered by the HSReplayReader. The HSReplayReader expects both start_element()
+	representation of each child tag encountered by the HSReplayParser. The HSReplayParser expects both start_element()
 	and end_element() to return a reference to the now current element of the tree data structure being constructed.
 
 	The default implementation of start_element() and end_element() are designed to work for elements which only
@@ -103,7 +103,7 @@ class ReplayBaseElement:
 			self._tags[tag.tag] = tag.value
 			return tag
 		else:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Only <Tag> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
 
 	def end_element(self, name):
@@ -142,7 +142,7 @@ class ReplayElement(ReplayBaseElement):
 			self._game = game_element
 			return game_element
 		else:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Only <Game> elements can descend from <HSReplay> but a <%s> tag was encountered." % name)
 
 	@property
@@ -255,7 +255,7 @@ class GameElement(ReplayBaseElement):
 		if name in self._start_element_handlers:
 			return self._start_element_handlers[name](attributes)
 		else:
-			raise ReplayReaderError("<%s> is not a valid child element type of <Game> element." % name)
+			raise ReplayParserError("<%s> is not a valid child element type of <Game> element." % name)
 
 	def end_element(self, name):
 		return super().end_element(name)
@@ -363,7 +363,7 @@ class ReplayTagElement(ReplayBaseElement):
 		super().__init__(attributes, parent, game)
 
 		if 'tag' not in attributes or 'value' not in attributes:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Invalid Tag element. 'tag' and 'value' must be provided, but arguments were: %s" % str(attributes))
 
 		self.tag = attributes['tag']
@@ -448,7 +448,7 @@ class MetaDataElement(ReplayBaseElement):
 			info = InfoElement(attributes, self, self._game)
 			return info
 		else:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Only <Info> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
 
 
@@ -512,7 +512,7 @@ class ActionElement(ReplayBaseElement):
 		if name in self._start_element_handlers:
 			return self._start_element_handlers[name](attributes)
 		else:
-			raise ReplayReaderError("<%s> is not a valid child element type of <Action> element." % name)
+			raise ReplayParserError("<%s> is not a valid child element type of <Action> element." % name)
 
 	def end_element(self, name):
 		return super().end_element(name)
@@ -531,7 +531,7 @@ class ChoicesElement(ReplayBaseElement):
 			self._choices.append(choice)
 			return choice
 		else:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Only <Choice> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
 
 
@@ -552,7 +552,7 @@ class SendChoicesElement(ReplayBaseElement):
 			self._choices.append(choice)
 			return choice
 		else:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Only <Choice> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
 
 
@@ -569,7 +569,7 @@ class OptionsElement(ReplayBaseElement):
 			self._option_list = option_list
 			return option_list
 		else:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Only <OptionList> elements can descend from <%s> but a <%s> tag was encountered." % (
 				self.element, name))
 
@@ -587,7 +587,7 @@ class OptionListElement(ReplayBaseElement):
 			self._options.append(option)
 			return option
 		else:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Only <Option> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
 
 
@@ -604,7 +604,7 @@ class OptionElement(ReplayBaseElement):
 			self._targets.append(target)
 			return target
 		else:
-			raise ReplayReaderError(
+			raise ReplayParserError(
 				"Only <Target> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
 
 

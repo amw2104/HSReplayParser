@@ -25,23 +25,15 @@ class HSReplayParser:
 	current element and the end of each element triggers an invocation of end_element(). The parser expects both methods
 	to return an updated reference to the element that is now the current element in the tree data structure. The parser
 	uses this reference to update the element to which _current is pointing.
-
-	Args:
-		f (file handle): The file like object containing the replay.
 	"""
 
-	def __init__(self, f):
+	def __init__(self):
 		self._current = None
 		self._hsreplay = None
+		self._is_final = False
 		self.parser = ParserCreate()
 		self.parser.StartElementHandler = self._start_element_handler
 		self.parser.EndElementHandler = self._end_element_handler
-
-		try:
-			self.parser.ParseFile(f)
-		except ExpatError as err:
-			raise ReplayParserError(
-				"Parsing Error on line %d character %d: %s" % (err.lineno, err.offset, errors.messages[err.code]))
 
 	def _start_element_handler(self, name, attributes):
 		LOG.debug('Start element %s at line %d: %s' % (name, self.parser.CurrentLineNumber, str(attributes)))
@@ -60,9 +52,45 @@ class HSReplayParser:
 		LOG.debug('End element %s at line %d' % (name, self.parser.CurrentLineNumber))
 		self._current = self._current.end_element(name)
 
+	def parse_file(self, f):
+		"""Parse a file-like object open in read binary mode.
+
+		Args:
+			f (file handle): The file like object containing the replay.
+		"""
+		if self._is_final:
+			raise ReplayParserError("Parsing already completed. Instantiate a new instance to parse another replay.")
+
+		try:
+			self.parser.ParseFile(f)
+			self._is_final = True
+		except ExpatError as err:
+			raise ReplayParserError(
+				"Parsing Error on line %d character %d: %s" % (err.lineno, err.offset, errors.messages[err.code]))
+
+	def parse_data(self, data, is_final=False):
+		"""Parse a chunk of binary replay data.
+
+		It is acceptable for data to be zero-length. is_final must be set to True at the end of the input.
+
+		Args:
+			data (Bytes) - Binary data from a replay file.
+			is_final (Boolean) - Indicates the end of input.
+		"""
+		if self._is_final:
+			raise ReplayParserError("Parsing already completed. Instantiate a new instance to parse another replay.")
+
+		try:
+			self.parser.Parse(data, is_final)
+			self._is_final = is_final
+		except ExpatError as err:
+			raise ReplayParserError(
+				"Parsing Error on line %d character %d: %s" % (err.lineno, err.offset, errors.messages[err.code]))
+
 	@property
 	def replay(self):
-		return self._hsreplay
+		"""A reference to the parsed replay. Returns None if parsing has not completed."""
+		return self._hsreplay if self._is_final else None
 
 
 class ReplayBaseElement:

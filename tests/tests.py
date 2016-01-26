@@ -1,13 +1,47 @@
 import unittest
-from hsreplayparser.parser import HSReplayParser
+from hsreplayparser.parser import HSReplayParser, ReplayParserError
 
 
-class HSReplayParserTests(unittest.TestCase):
+class HSReplayParserParsingTests(unittest.TestCase):
+	"""Tests related to the various modes of providing data for parsing."""
+
+	def test_parsing_binary_chunks(self):
+		data = open('./Power_2.log.xml', mode='rb').read()
+		start_index = 0
+		batch_size = 1000
+
+		parser = HSReplayParser()
+		self.assertIsNone(parser.replay)
+
+		while start_index < len(data):
+			end_index = 0
+			is_final = False
+
+			if start_index + batch_size >= len(data):
+				end_index = len(data)
+				is_final = True
+			else:
+				end_index = start_index + batch_size
+
+			chunk = data[start_index: end_index]
+			parser.parse_data(chunk, is_final)
+			start_index = end_index
+
+			if not is_final:
+				self.assertIsNone(parser.replay)
+
+		self.assertIsNotNone(parser.replay)
+		self.assertRaises(ReplayParserError, parser.parse_data, data[0:100])
+
+
+class HSReplayParserGameInspectionTests(unittest.TestCase):
+	"""Tests related to inspecting the game state after parsing has completed."""
 
 	def setUp(self):
 
 		with open('./Power_2.log.xml', mode='rb') as f:
-			self.parser = HSReplayParser(f)
+			self.parser = HSReplayParser()
+			self.parser.parse_file(f)
 
 	def test_player_names(self):
 		self.assertEqual(self.parser.replay.game.first_player.name, "Veritas")

@@ -281,6 +281,20 @@ class GameElement(ReplayBaseElement):
 
 		return None
 
+	@property
+	def game_type(self):
+		if 'type' in self._attributes:
+			return GameType(int(self._attributes['type']))
+		else:
+			return None
+
+	@property
+	def timestamp(self):
+		if 'ts' in self._attributes:
+			return self._attributes['ts']
+		else:
+			return None
+
 	def _initialize(self):
 
 		for player in self._players:
@@ -451,6 +465,13 @@ class PlayerElement(ReplayBaseElement):
 			info.final_cards.append(self._deck[k] if self._deck[k] else "UNREVEALED")
 
 		return info
+
+	@property
+	def rank(self):
+		if 'rank' in self._attributes:
+			return int(self._attributes['rank'])
+		else:
+			return -1
 
 
 class ReplayTagElement(ReplayBaseElement):

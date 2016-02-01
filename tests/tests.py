@@ -44,26 +44,26 @@ class HSReplayParserGameInspectionTests(unittest.TestCase):
 			self.parser.parse_file(f)
 
 	def test_player_names(self):
-		self.assertEqual(self.parser.replay.game.first_player.name, "Veritas")
-		self.assertEqual(self.parser.replay.game.second_player.name, "TheKEG")
+		self.assertEqual(self.parser.replay.games[0].first_player.name, "Veritas")
+		self.assertEqual(self.parser.replay.games[0].second_player.name, "TheKEG")
 
 	def test_deck_capture(self):
-		self.assertEqual(len(self.parser.replay.game.first_player.deck), 30)
-		self.assertEqual(len(self.parser.replay.game.second_player.deck), 30)
+		self.assertEqual(len(self.parser.replay.games[0].first_player.deck), 30)
+		self.assertEqual(len(self.parser.replay.games[0].second_player.deck), 30)
 
 	def test_deck_lists(self):
 		expected_winning_deck = ['CS1_112', 'EX1_091', 'EX1_284', 'BRM_034', 'BRM_034', 'BRM_004', 'CS2_235', 'AT_017', 'GVG_008']
 		expected_loosing_deck = ['EX1_354', 'EX1_382', 'AT_104', 'GVG_061', 'GVG_060', 'NEW1_019', 'GVG_061', 'EX1_005', 'GVG_096', 'EX1_383', 'CS2_203', 'AT_104', 'EX1_382']
 
-		actual_winning_deck = self.parser.replay.game.winner.deck_list
-		actual_loosing_deck = self.parser.replay.game.looser.deck_list
+		actual_winning_deck = self.parser.replay.games[0].winner.deck_list
+		actual_loosing_deck = self.parser.replay.games[0].looser.deck_list
 
 		self.assertCountEqual(actual_winning_deck, expected_winning_deck)
 		self.assertCountEqual(actual_loosing_deck, expected_loosing_deck)
 
 	def test_mulligan_info(self):
 		# FIRST PLAYER
-		first_player = self.parser.replay.game.first_player
+		first_player = self.parser.replay.games[0].first_player
 		first_player_mulligan_info = first_player.mulligan_info
 
 		expected_first_player_initial_draw = ['UNREVEALED', 'AT_017', 'UNREVEALED']
@@ -75,7 +75,7 @@ class HSReplayParserGameInspectionTests(unittest.TestCase):
 		self.assertCountEqual(expected_first_player_final_cards, first_player_mulligan_info.final_cards)
 
 		# SECOND PLAYER
-		second_player = self.parser.replay.game.second_player
+		second_player = self.parser.replay.games[0].second_player
 		second_player_mulligan_info = second_player.mulligan_info
 
 		expected_second_player_initial_draw = ['EX1_382', 'GVG_096', 'AT_104', 'GVG_061']

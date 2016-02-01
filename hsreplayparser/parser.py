@@ -564,6 +564,7 @@ class ActionElement(ReplayBaseElement):
 			"TagChange": self._start_tag_change,
 			"Choices": self._start_choices,
 			"SendChoices": self._start_send_choices,
+			"ChosenEntities": self._start_chosen_entities,
 			"ShowEntity": self._start_show_entity,
 			"HideEntity": self._start_hide_entity,
 			"Action": self._start_action,
@@ -590,6 +591,11 @@ class ActionElement(ReplayBaseElement):
 		choices_element = ChoicesElement(attributes, self, self._game)
 		self._current = choices_element
 		return choices_element
+
+	def _start_chosen_entities(self, attributes):
+		chosen_entities_element = ChosenEntitiesElement(attributes, self, self._game)
+		self._current = chosen_entities_element
+		return chosen_entities_element
 
 	def _start_send_choices(self, attributes):
 		send_choices_element = SendChoicesElement(attributes, self, self._game)

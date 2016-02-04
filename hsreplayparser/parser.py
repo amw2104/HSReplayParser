@@ -7,7 +7,7 @@ from hearthstone.enums import *
 from xml.parsers.expat import ParserCreate, ExpatError
 import xml.parsers.expat.errors as errors
 import logging
-
+from datetime import datetime
 
 LOG = logging.getLogger(__name__)
 THE_COIN = 'GAME_005'
@@ -295,14 +295,38 @@ class GameElement(ReplayBaseElement):
 		else:
 			return None
 
+	@property
+	def match_date(self):
+		if 'ts' in self._attributes:
+			timestamp = self._attributes['ts']
+			try:
+				date = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
+				return date
+			except:
+				return None
+
+		else:
+			return None
+
 	def _initialize(self):
 
+		# Determine first and second player
 		for player in self._players:
 			if player.is_current_player:
 				self._current_player = player
 				self._first_player = player
 			else:
 				self._second_player = player
+
+		# Determine the friendly player
+		friendly_controller_player_id = None
+		for entity in self._entities.values():
+			if 'cardID' in entity._attributes and entity._attributes['cardID'] != None:
+				friendly_controller_player_id = entity._tag_value(GameTag.CONTROLLER)
+
+		for player in self._players:
+			if player.player_id == friendly_controller_player_id:
+				player.is_friendly_player = True
 
 		self._initialized = True
 
@@ -388,6 +412,7 @@ class PlayerElement(ReplayBaseElement):
 		self._pre_mulligan_initial_hand = {}
 		self._post_mulligan_initial_hand = {}
 		self._mulligan_discards = set()
+		self.is_friendly_player = False
 
 	def _process_show_entity(self, show_entity):
 		if show_entity.entity in self._deck:

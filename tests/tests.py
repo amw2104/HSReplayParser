@@ -1,6 +1,7 @@
 import unittest
 from hsreplayparser.parser import HSReplayParser, ReplayParserError
-
+from datetime import datetime
+from hearthstone.enums import GameType
 
 class HSReplayParserParsingTests(unittest.TestCase):
 	"""Tests related to the various modes of providing data for parsing."""
@@ -42,6 +43,33 @@ class HSReplayParserGameInspectionTests(unittest.TestCase):
 		with open('./Power_2.log.xml', mode='rb') as f:
 			self.parser = HSReplayParser()
 			self.parser.parse_file(f)
+
+	def test_player_ranks(self):
+		with open('./replays/2016-02-01T21.25.02.gamestate.4.log.xml', mode='rb') as f:
+			self.parser = HSReplayParser()
+			self.parser.parse_file(f)
+
+			game = self.parser.replay.games[0]
+			self.assertEqual(game.winner.rank, 19)
+			self.assertEqual(game.looser.rank, 19)
+
+	def test_match_date(self):
+		with open('./replays/2016-02-01T21.25.02.gamestate.4.log.xml', mode='rb') as f:
+			self.parser = HSReplayParser()
+			self.parser.parse_file(f)
+
+			game = self.parser.replay.games[0]
+			# 2016-02-01T21:06:34
+			self.assertEqual(game.match_date, datetime(year = 2016, month = 2, day = 1, hour = 21, minute = 6, second = 34))
+
+	def test_game_type(self):
+		with open('./replays/2016-02-01T21.25.02.gamestate.4.log.xml', mode='rb') as f:
+			self.parser = HSReplayParser()
+			self.parser.parse_file(f)
+
+			game = self.parser.replay.games[0]
+			self.assertEqual(game.game_type, GameType.GT_RANKED)
+
 
 	def test_player_names(self):
 		self.assertEqual(self.parser.replay.games[0].first_player.name, "Veritas")

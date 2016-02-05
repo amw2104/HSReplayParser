@@ -49,7 +49,7 @@ class HSReplayParser:
 		else:
 			try:
 				self._current = self._current.start_element(name, attributes)
-			except ReplayParserError as e:
+			except Exception as e:
 				raise ReplayParserError("Line %d: %s" % (self.parser.CurrentLineNumber, e))
 
 	def _end_element_handler(self, name):
@@ -224,6 +224,7 @@ class GameElement(ReplayBaseElement):
 		self._first_player = None
 		self._second_player = None
 		self._current_player = None
+		self._friendly_player = None
 
 	def _process_tag_change(self, tag_change):
 		if tag_change.entity in self._entities:
@@ -259,6 +260,10 @@ class GameElement(ReplayBaseElement):
 	@property
 	def second_player(self):
 		return self._second_player
+
+	@property
+	def friendly_player(self):
+		return self._friendly_player
 
 	@property
 	def winner(self):
@@ -321,17 +326,19 @@ class GameElement(ReplayBaseElement):
 		# Determine the friendly player
 		friendly_controller_player_id = None
 		for entity in self._entities.values():
-			if 'cardID' in entity._attributes and entity._attributes['cardID'] != None:
+			if 'cardID' in entity._attributes and entity._attributes['cardID'] != None and not entity._attributes['cardID'].startswith('HERO'):
 				friendly_controller_player_id = entity._tag_value(GameTag.CONTROLLER)
 
 		for player in self._players:
 			if player.player_id == friendly_controller_player_id:
 				player.is_friendly_player = True
+				self._friendly_player = player
 
 		self._initialized = True
 
 	def _initialization_requirements_met(self):
-		return self._game_entity and len(self._players) == 2
+		entity_can_reveal_friendly_player_criteria = lambda e: 'cardID' in e._attributes and not e._attributes['cardID'].startswith('HERO')
+		return self._game_entity and len(self._players) == 2 and any(filter(entity_can_reveal_friendly_player_criteria, self._entities.values()))
 
 	def start_element(self, name, attributes):
 

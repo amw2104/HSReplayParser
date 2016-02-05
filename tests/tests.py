@@ -62,6 +62,15 @@ class HSReplayParserGameInspectionTests(unittest.TestCase):
 			# 2016-02-01T21:06:34
 			self.assertEqual(game.match_date, datetime(year = 2016, month = 2, day = 1, hour = 21, minute = 6, second = 34))
 
+	def test_friendly_player(self):
+		with open('./replays/2016-02-01T21.25.02.gamestate.4.log.xml', mode='rb') as f:
+			self.parser = HSReplayParser()
+			self.parser.parse_file(f)
+
+			game = self.parser.replay.games[0]
+			# 2016-02-01T21:06:34
+			self.assertEqual(game.friendly_player.name, "Nicodemus")
+
 	def test_game_type(self):
 		with open('./replays/2016-02-01T21.25.02.gamestate.4.log.xml', mode='rb') as f:
 			self.parser = HSReplayParser()
@@ -69,7 +78,6 @@ class HSReplayParserGameInspectionTests(unittest.TestCase):
 
 			game = self.parser.replay.games[0]
 			self.assertEqual(game.game_type, GameType.GT_RANKED)
-
 
 	def test_player_names(self):
 		self.assertEqual(self.parser.replay.games[0].first_player.name, "Veritas")

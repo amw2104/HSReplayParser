@@ -4,6 +4,7 @@ The parser converts .hsreplay files into tree like data structures that can be i
 details of the HSReplay specification can be found at: https://github.com/HearthSim/HSReplay
 """
 from hearthstone.enums import *
+from enum import IntEnum
 from xml.parsers.expat import ParserCreate, ExpatError
 import xml.parsers.expat.errors as errors
 import logging
@@ -11,6 +12,15 @@ from datetime import datetime
 
 LOG = logging.getLogger(__name__)
 THE_COIN = 'GAME_005'
+
+
+class BattleNetRegion(IntEnum):
+	US=1 #144115193835963207
+	EU=2 #
+	KR=3
+	TW=4
+	CN=5
+	SEA = 6
 
 
 class ReplayParserError(Exception):
@@ -201,6 +211,7 @@ class GameElement(ReplayBaseElement):
 		self._game = self
 
 		self._initialized = False
+		self._region = None
 		self._first_main_stage_started = False
 
 		self._start_element_handlers = {
@@ -334,6 +345,9 @@ class GameElement(ReplayBaseElement):
 				player.is_friendly_player = True
 				self._friendly_player = player
 
+		# Determine the Region
+
+
 		self._initialized = True
 
 	def _initialization_requirements_met(self):
@@ -403,6 +417,30 @@ class GameElement(ReplayBaseElement):
 		return send_option
 
 
+class ReplayCardElement(ReplayBaseElement):
+	element = "Card"
+
+	def __init__(self, attributes, parent, game):
+		super().__init__(attributes, parent, game)
+
+
+class DeckElement(ReplayBaseElement):
+	element = "Deck"
+
+	def __init__(self, attributes, parent, game):
+		super().__init__(attributes, parent, game)
+		self._cards = []
+
+	def start_element(self, name, attributes):
+		if name == "Card":
+			card = ReplayCardElement(attributes, self, self._game)
+			self._cards.append(card)
+			return card
+		else:
+			raise ReplayParserError(
+				"Only <Card> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
+
+
 class PlayerElement(ReplayBaseElement):
 	"""The <Player> element.
 
@@ -420,6 +458,17 @@ class PlayerElement(ReplayBaseElement):
 		self._post_mulligan_initial_hand = {}
 		self._mulligan_discards = set()
 		self.is_friendly_player = False
+
+	def start_element(self, name, attributes):
+		if name == "Deck":
+			deck = DeckElement(attributes, self, self._game)
+			return deck
+		elif name == "Tag":
+			return super().start_element(name, attributes)
+		else:
+			raise ReplayParserError(
+				"Only <Deck> or <Tag> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
+
 
 	def _process_show_entity(self, show_entity):
 		if show_entity.entity in self._deck:

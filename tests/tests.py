@@ -53,6 +53,14 @@ class HSReplayParserGameInspectionTests(unittest.TestCase):
 			self.assertEqual(game.winner.rank, 19)
 			self.assertEqual(game.looser.rank, 19)
 
+	def test_player_deck(self):
+		with open('./replays/replay_with_player_deck_included.xml', mode='rb') as f:
+			self.parser = HSReplayParser()
+			self.parser.parse_file(f)
+
+			game = self.parser.replay.games[0]
+			self.assertEqual(game.looser.name, "Nicodemus")
+
 	def test_match_date(self):
 		with open('./replays/2016-02-01T21.25.02.gamestate.4.log.xml', mode='rb') as f:
 			self.parser = HSReplayParser()

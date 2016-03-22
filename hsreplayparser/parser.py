@@ -106,7 +106,7 @@ class HSReplayParser:
 		return self._hsreplay if self._is_final else None
 
 
-class ReplayBaseElement:
+class ReplayBaseElement(object):
 	"""The base class of all elements that participate in the tree data structure created by the parser.
 
 	Override start_element() and end_element() in sub-classes to provide element specific logic for handling replay

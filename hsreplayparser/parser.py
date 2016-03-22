@@ -6,7 +6,6 @@ details of the HSReplay specification can be found at: https://github.com/Hearth
 from hearthstone.enums import *
 from enum import IntEnum
 from xml.parsers.expat import ParserCreate, ExpatError
-import xml.parsers.expat.errors as errors
 import logging
 from datetime import datetime
 
@@ -80,7 +79,7 @@ class HSReplayParser:
 			self._is_final = True
 		except ExpatError as err:
 			raise ReplayParserError(
-				"Parsing Error on line %d character %d: %s" % (err.lineno, err.offset, errors.messages[err.code]))
+				"Parsing Error on line %d character %d: %s" % (err.lineno, err.offset, err.code))
 
 	def parse_data(self, data, is_final=False):
 		"""Parse a chunk of binary replay data.
@@ -99,7 +98,7 @@ class HSReplayParser:
 			self._is_final = is_final
 		except ExpatError as err:
 			raise ReplayParserError(
-				"Parsing Error on line %d character %d: %s" % (err.lineno, err.offset, errors.messages[err.code]))
+				"Parsing Error on line %d character %d: %s" % (err.lineno, err.offset, err.code))
 
 	@property
 	def replay(self):
@@ -175,7 +174,7 @@ class ReplayElement(ReplayBaseElement):
 	element = "HSReplay"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(ReplayElement, self).__init__(attributes, parent, game)
 		self._games = []
 
 	def start_element(self, name, attributes):
@@ -207,7 +206,7 @@ class GameElement(ReplayBaseElement):
 	element = "Game"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(GameElement, self).__init__(attributes, parent, game)
 		self._game = self
 
 		self._initialized = False
@@ -365,7 +364,7 @@ class GameElement(ReplayBaseElement):
 			raise ReplayParserError("<%s> is not a valid child element type of <Game> element." % name)
 
 	def end_element(self, name):
-		return super().end_element(name)
+		return super(GameElement, self).end_element(name)
 
 	def _start_game_entity(self, attributes):
 		game_entity = GameEntityElement(attributes, self, self._game)
@@ -421,14 +420,14 @@ class ReplayCardElement(ReplayBaseElement):
 	element = "Card"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(ReplayCardElement, self).__init__(attributes, parent, game)
 
 
 class DeckElement(ReplayBaseElement):
 	element = "Deck"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(DeckElement, self).__init__(attributes, parent, game)
 		self._cards = []
 
 	def start_element(self, name, attributes):
@@ -451,7 +450,7 @@ class PlayerElement(ReplayBaseElement):
 	element = "Player"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(PlayerElement, self).__init__(attributes, parent, game)
 		self._controlled_entities = []
 		self._deck = {}
 		self._pre_mulligan_initial_hand = {}
@@ -464,7 +463,7 @@ class PlayerElement(ReplayBaseElement):
 			deck = DeckElement(attributes, self, self._game)
 			return deck
 		elif name == "Tag":
-			return super().start_element(name, attributes)
+			return super(PlayerElement, self).start_element(name, attributes)
 		else:
 			raise ReplayParserError(
 				"Only <Deck> or <Tag> elements can descend from <%s> but a <%s> tag was encountered." % (self.element, name))
@@ -559,7 +558,7 @@ class ReplayTagElement(ReplayBaseElement):
 	element = "Tag"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(ReplayTagElement, self).__init__(attributes, parent, game)
 
 		if 'tag' not in attributes or 'value' not in attributes:
 			raise ReplayParserError(
@@ -585,7 +584,7 @@ class FullEntityElement(ReplayBaseElement):
 
 			player.register_controlled_entity(self)
 
-		return super().end_element(name)
+		return super(FullEntityElement, self).end_element(name)
 
 	@property
 	def has_card_type(self):
@@ -601,7 +600,7 @@ class TagChangeElement(ReplayBaseElement):
 	element = "TagChange"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(TagChangeElement, self).__init__(attributes, parent, game)
 
 		self._game._process_tag_change(self)
 
@@ -622,7 +621,7 @@ class ShowEntityElement(ReplayBaseElement):
 	element = "ShowEntity"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(ShowEntityElement, self).__init__(attributes, parent, game)
 
 		self._game._process_show_entity(self)
 
@@ -659,7 +658,7 @@ class ActionElement(ReplayBaseElement):
 	element = "Action"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(ActionElement, self).__init__(attributes, parent, game)
 
 		self._current = None
 		self._start_element_handlers = {
@@ -726,14 +725,14 @@ class ActionElement(ReplayBaseElement):
 			raise ReplayParserError("<%s> is not a valid child element type of <Action> element." % name)
 
 	def end_element(self, name):
-		return super().end_element(name)
+		return super(ActionElement, self).end_element(name)
 
 
 class ChoicesElement(ReplayBaseElement):
 	element = "Choices"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(ChoicesElement, self).__init__(attributes, parent, game)
 		self._choices = []
 
 	def start_element(self, name, attributes):
@@ -755,7 +754,7 @@ class SendChoicesElement(ReplayBaseElement):
 	element = "SendChoices"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(SendChoicesElement, self).__init__(attributes, parent, game)
 		self._choices = []
 
 	def start_element(self, name, attributes):
@@ -773,7 +772,7 @@ class ChosenEntitiesElement(ReplayBaseElement):
 	element = "ChosenEntities"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(ChosenEntitiesElement, self).__init__(attributes, parent, game)
 		self._choices = []
 
 	def start_element(self, name, attributes):
@@ -790,7 +789,7 @@ class OptionsElement(ReplayBaseElement):
 	element = "Options"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(OptionsElement, self).__init__(attributes, parent, game)
 		self._option_list = None
 		self._options = []
 
@@ -813,7 +812,7 @@ class OptionListElement(ReplayBaseElement):
 	element = "OptionList"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(OptionListElement, self).__init__(attributes, parent, game)
 		self._options = []
 
 	def start_element(self, name, attributes):
@@ -830,7 +829,7 @@ class OptionElement(ReplayBaseElement):
 	element = "Option"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(OptionElement, self).__init__(attributes, parent, game)
 		self._targets = []
 
 	def start_element(self, name, attributes):
@@ -850,7 +849,7 @@ class SubOptionElement(ReplayBaseElement):
 	element = "SubOption"
 
 	def __init__(self, attributes, parent, game):
-		super().__init__(attributes, parent, game)
+		super(SubOptionElement, self).__init__(attributes, parent, game)
 		self._targets = []
 
 	def start_element(self, name, attributes):
